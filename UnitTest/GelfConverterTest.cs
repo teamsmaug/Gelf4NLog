@@ -12,6 +12,45 @@ namespace Gelf4NLog.UnitTest
         public class GetGelfJsonMethod
         {
             [Test]
+            public void ShouldCreateGelfJsonCorrectlyWithFlattenedExtraObjects()
+            {
+                var timestamp = DateTime.Now;
+                var logEvent = new LogEventInfo
+                {
+                    Message = "Test Log Message",
+                    Level = LogLevel.Info,
+                    TimeStamp = timestamp,
+                    LoggerName = "GelfConverterTestLogger"
+                };
+                logEvent.Properties.Add("customproperty4", new[] { 1, 2, 3 });
+                logEvent.Properties.Add("_customproperty1", "customvalue1");
+                logEvent.Properties.Add("_customproperty2", new { Value1 = "customvalue1", Value2 = "customvalue2", Extra2 = new { Value3 = "customvalue3" } });
+                logEvent.Properties.Add("customproperty3", 2);
+                
+
+                var jsonObject = new GelfConverter().GetGelfJson(logEvent, "TestFacility");
+
+                Assert.IsNotNull(jsonObject);
+                Assert.AreEqual("1.1", jsonObject.Value<string>("version"));
+                Assert.AreEqual(Dns.GetHostName(), jsonObject.Value<string>("host"));
+                Assert.AreEqual("Test Log Message", jsonObject.Value<string>("short_message"));
+                Assert.AreEqual("Test Log Message", jsonObject.Value<string>("full_message"));
+                Assert.AreEqual(timestamp, jsonObject.Value<DateTime>("timestamp"));
+                Assert.AreEqual(6, jsonObject.Value<int>("level"));
+
+                Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty1"));
+                Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty2_value1"));
+                Assert.AreEqual("customvalue2", jsonObject.Value<string>("_customproperty2_value2"));
+                Assert.AreEqual("customvalue3", jsonObject.Value<string>("_customproperty2_extra2_value3"));
+                Assert.AreEqual("GelfConverterTestLogger", jsonObject.Value<string>("_loggerName"));
+                Assert.AreEqual("TestFacility", jsonObject.Value<string>("_facility"));
+                Assert.AreEqual(2, jsonObject.Value<int>("_customproperty3"));
+
+                //make sure that there are no other junk in there
+                Assert.AreEqual(13, jsonObject.Count);
+            }
+
+            [Test]
             public void ShouldCreateGelfJsonCorrectly()
             {
                 var timestamp = DateTime.Now;
@@ -28,22 +67,20 @@ namespace Gelf4NLog.UnitTest
                 var jsonObject = new GelfConverter().GetGelfJson(logEvent, "TestFacility");
 
                 Assert.IsNotNull(jsonObject);
-                Assert.AreEqual("1.0", jsonObject.Value<string>("version"));
+                Assert.AreEqual("1.1", jsonObject.Value<string>("version"));
                 Assert.AreEqual(Dns.GetHostName(), jsonObject.Value<string>("host"));
                 Assert.AreEqual("Test Log Message", jsonObject.Value<string>("short_message"));
                 Assert.AreEqual("Test Log Message", jsonObject.Value<string>("full_message"));
                 Assert.AreEqual(timestamp, jsonObject.Value<DateTime>("timestamp"));
                 Assert.AreEqual(6, jsonObject.Value<int>("level"));
-                Assert.AreEqual("TestFacility", jsonObject.Value<string>("facility"));
-                Assert.AreEqual("", jsonObject.Value<string>("file"));
-                Assert.AreEqual("", jsonObject.Value<string>("line"));
+                Assert.AreEqual("TestFacility", jsonObject.Value<string>("_facility"));
                 
                 Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty1"));
                 Assert.AreEqual("customvalue2", jsonObject.Value<string>("_customproperty2"));
-                Assert.AreEqual("GelfConverterTestLogger", jsonObject.Value<string>("_LoggerName"));
+                Assert.AreEqual("GelfConverterTestLogger", jsonObject.Value<string>("_loggerName"));
                 
                 //make sure that there are no other junk in there
-                Assert.AreEqual(12, jsonObject.Count);
+                Assert.AreEqual(10, jsonObject.Count);
             }
 
             [Test]
@@ -61,11 +98,11 @@ namespace Gelf4NLog.UnitTest
                 Assert.AreEqual("Test Message", jsonObject.Value<string>("short_message"));
                 Assert.AreEqual("Test Message", jsonObject.Value<string>("full_message"));
                 Assert.AreEqual(3, jsonObject.Value<int>("level"));
-                Assert.AreEqual("TestFacility", jsonObject.Value<string>("facility"));
-                Assert.AreEqual(null, jsonObject.Value<string>("_ExceptionSource"));
-                Assert.AreEqual("div by 0", jsonObject.Value<string>("_ExceptionMessage"));
-                Assert.AreEqual(null, jsonObject.Value<string>("_StackTrace"));
-                Assert.AreEqual(null, jsonObject.Value<string>("_LoggerName"));
+                Assert.AreEqual("TestFacility", jsonObject.Value<string>("_facility"));
+                Assert.AreEqual(null, jsonObject.Value<string>("_exceptionSource"));
+                Assert.AreEqual("div by 0", jsonObject.Value<string>("_exceptionMessage"));
+                Assert.AreEqual(null, jsonObject.Value<string>("_stackTrace"));
+                Assert.AreEqual(null, jsonObject.Value<string>("_loggerName"));
             }
 
             [Test]
@@ -95,17 +132,6 @@ namespace Gelf4NLog.UnitTest
                 Assert.IsNotNull(jsonObject);
                 Assert.IsNull(jsonObject["_id"]);
                 Assert.AreEqual("not_important", jsonObject.Value<string>("_id_"));
-            }
-
-            [TestCase("")]
-            [TestCase(null)]
-            public void ShouldSetDefaultFacility(string facility)
-            {
-                var logEvent = new LogEventInfo {Message = "Test"};
-
-                var jsonObject = new GelfConverter().GetGelfJson(logEvent, facility);
-
-                Assert.AreEqual("GELF", jsonObject.Value<string>("facility"));
             }
         }
     }

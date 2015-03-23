@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Linq;
 using System.Net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NLog;
 using Newtonsoft.Json.Linq;
 
@@ -11,6 +15,14 @@ namespace Gelf4NLog.Target
     {
         private const int ShortMessageMaxLength = 250;
         private const string GelfVersion = "1.1";
+
+        private static readonly CamelCasePropertyNamesContractResolver PropertyResolver = new CamelCasePropertyNamesContractResolver();
+
+        private static readonly JsonSerializer Serializer = new JsonSerializer
+        {
+            NullValueHandling = NullValueHandling.Include,
+            ContractResolver = PropertyResolver
+        };
 
         public JObject GetGelfJson(LogEventInfo logEventInfo, string facility)
         {
@@ -42,23 +54,31 @@ namespace Gelf4NLog.Target
                                       ShortMessage = shortMessage,
                                       FullMessage = logEventMessage,
                                       Timestamp = logEventInfo.TimeStamp,
-                                      Level = GetSeverityLevel(logEventInfo.Level),
-                                      //Spec says: facility must be set by the client to "GELF" if empty
-                                      //Facility = (string.IsNullOrEmpty(facility) ? "GELF" : facility),
-                                      //Line = (logEventInfo.UserStackFrame != null)
-                                      //           ? logEventInfo.UserStackFrame.GetFileLineNumber().ToString(
-                                      //               CultureInfo.InvariantCulture)
-                                      //           : string.Empty,
-                                      //File = (logEventInfo.UserStackFrame != null)
-                                      //           ? logEventInfo.UserStackFrame.GetFileName()
-                                      //           : string.Empty,
+                                      Level = GetSeverityLevel(logEventInfo.Level)
                                   };
 
             //Convert to JSON
             var jsonObject = JObject.FromObject(gelfMessage);
 
             //Add any other interesting data to LogEventInfo properties
-            logEventInfo.Properties.Add("LoggerName", logEventInfo.LoggerName);
+            logEventInfo.Properties.Add("loggerName", logEventInfo.LoggerName);
+
+            if (!string.IsNullOrWhiteSpace(facility))
+            {
+                logEventInfo.Properties.Add("facility", facility);
+            }
+
+            var line = GetLine(logEventInfo);
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                logEventInfo.Properties.Add("line", line);
+            }
+
+            var file = GetFile(logEventInfo);
+            if (!string.IsNullOrWhiteSpace(file))
+            {
+                logEventInfo.Properties.Add("file", file);
+            }
 
             //We will persist them "Additional Fields" according to Gelf spec
             foreach (var property in logEventInfo.Properties)
@@ -69,12 +89,51 @@ namespace Gelf4NLog.Target
             return jsonObject;
         }
 
+        private static string GetFile(LogEventInfo logEventInfo)
+        {
+            return (logEventInfo.UserStackFrame != null)
+                ? logEventInfo.UserStackFrame.GetFileName()
+                : string.Empty;
+        }
+
+        private static string GetLine(LogEventInfo logEventInfo)
+        {
+            return (logEventInfo.UserStackFrame != null)
+                ? logEventInfo.UserStackFrame.GetFileLineNumber().ToString(
+                    CultureInfo.InvariantCulture)
+                : string.Empty;
+        }
+
+        private static void FlattenAndAddObject(IDictionary<string, JToken> gelfMessage, string key, IEnumerable<JToken> values)
+        {
+            foreach (var value in values)
+            {
+                if (value is JProperty)
+                {
+                    var property = value as JProperty;
+
+                    var flattenedKey = string.Concat(key, "_", property.Name);
+                    if (!property.Value.HasValues)
+                    {
+                        gelfMessage.Add(flattenedKey, property.Value);
+                    }
+
+                    FlattenAndAddObject(gelfMessage, flattenedKey, property.Children());
+                }
+
+                if (value is JObject)
+                {
+                    FlattenAndAddObject(gelfMessage, key, value);
+                }
+            }
+        }
+
         private static void AddAdditionalField(IDictionary<string, JToken> jObject, KeyValuePair<object, object> property)
         {
             var key = property.Key as string;
-            var value = property.Value as string;
-
             if (key == null) return;
+
+            key = PropertyResolver.GetResolvedPropertyName(key);
 
             //According to the GELF spec, libraries should NOT allow to send id as additional field (_id)
             //Server MUST skip the field because it could override the MongoDB _key field
@@ -85,7 +144,19 @@ namespace Gelf4NLog.Target
             if (!key.StartsWith("_", StringComparison.OrdinalIgnoreCase))
                 key = "_" + key;
 
-            jObject.Add(key, value);
+            if (property.Value == null)
+            {
+                jObject.Add(key, null);
+                return;
+            }
+                
+            var value = JToken.FromObject(property.Value, Serializer);
+            FlattenAndAddObject(jObject, key, value);
+
+            if (!value.HasValues)
+            {
+                jObject.Add(key, value);
+            }
         }
 
         /// <summary>
