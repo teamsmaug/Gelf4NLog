@@ -6,12 +6,6 @@ namespace Gelf4NLog.Target
     [JsonObject(MemberSerialization.OptIn)]
     public class GelfMessage
     {
-        [JsonProperty("facility")]
-        public string Facility { get; set; }
-
-        [JsonProperty("file")]
-        public string File { get; set; }
-
         [JsonProperty("full_message")]
         public string FullMessage { get; set; }
 
@@ -20,9 +14,6 @@ namespace Gelf4NLog.Target
 
         [JsonProperty("level")]
         public int Level { get; set; }
-
-        [JsonProperty("line")]
-        public string Line { get; set; }
 
         [JsonProperty("short_message")]
         public string ShortMessage { get; set; }

@@ -44,14 +44,14 @@ namespace Gelf4NLog.Target
                                       Timestamp = logEventInfo.TimeStamp,
                                       Level = GetSeverityLevel(logEventInfo.Level),
                                       //Spec says: facility must be set by the client to "GELF" if empty
-                                      Facility = (string.IsNullOrEmpty(facility) ? "GELF" : facility),
-                                      Line = (logEventInfo.UserStackFrame != null)
-                                                 ? logEventInfo.UserStackFrame.GetFileLineNumber().ToString(
-                                                     CultureInfo.InvariantCulture)
-                                                 : string.Empty,
-                                      File = (logEventInfo.UserStackFrame != null)
-                                                 ? logEventInfo.UserStackFrame.GetFileName()
-                                                 : string.Empty,
+                                      //Facility = (string.IsNullOrEmpty(facility) ? "GELF" : facility),
+                                      //Line = (logEventInfo.UserStackFrame != null)
+                                      //           ? logEventInfo.UserStackFrame.GetFileLineNumber().ToString(
+                                      //               CultureInfo.InvariantCulture)
+                                      //           : string.Empty,
+                                      //File = (logEventInfo.UserStackFrame != null)
+                                      //           ? logEventInfo.UserStackFrame.GetFileName()
+                                      //           : string.Empty,
                                   };
 
             //Convert to JSON
