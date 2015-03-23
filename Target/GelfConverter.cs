@@ -10,7 +10,7 @@ namespace Gelf4NLog.Target
     public class GelfConverter : IConverter
     {
         private const int ShortMessageMaxLength = 250;
-        private const string GelfVersion = "1.0";
+        private const string GelfVersion = "1.1";
 
         public JObject GetGelfJson(LogEventInfo logEventInfo, string facility)
         {
