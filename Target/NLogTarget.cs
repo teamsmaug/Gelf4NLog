@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using NLog;
+using NLog.Layouts;
 using NLog.Targets;
 using Newtonsoft.Json;
 
@@ -9,15 +10,18 @@ namespace Gelf4NLog.Target
     public class NLogTarget : TargetWithLayout
     {
         [Required]
-        public string HostIp { get; set; }
+        public Layout HostIp { get; set; }
 
         [Required]
-        public int HostPort { get; set; }
+        public Layout HostPort { get; set; }
 
         public string Facility { get; set; }
 
         public IConverter Converter { get; private set; }
         public ITransport Transport { get; private set; }
+
+        private int _port;
+        private string _hostIp;
 
         public NLogTarget()
         {
@@ -40,7 +44,14 @@ namespace Gelf4NLog.Target
         {
             var jsonObject = Converter.GetGelfJson(logEvent, Facility);
             if (jsonObject == null) return;
-            Transport.Send(HostIp, HostPort, jsonObject.ToString(Formatting.None, null));
+
+            if (string.IsNullOrWhiteSpace(_hostIp))
+            {
+                _hostIp = HostIp.Render(logEvent);
+                _port = int.Parse(HostPort.Render(logEvent));
+            }
+
+            Transport.Send(_hostIp, _port, jsonObject.ToString(Formatting.None, null));
         }
     }
 }
