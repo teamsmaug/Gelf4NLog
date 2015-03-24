@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -156,12 +154,13 @@ namespace Gelf4NLog.Target
             }
                 
             var value = JToken.FromObject(property.Value, Serializer);
-            FlattenAndAddObject(jObject, key, value);
-
             if (!value.HasValues || value is JArray)
             {
                 jObject.Add(key, value);
+                return;
             }
+
+            FlattenAndAddObject(jObject, key, value);
         }
 
         /// <summary>
