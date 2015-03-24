@@ -24,7 +24,7 @@ namespace Gelf4NLog.UnitTest
                 };
                 logEvent.Properties.Add("customproperty4", new[] { 1, 2, 3 });
                 logEvent.Properties.Add("_customproperty1", "customvalue1");
-                logEvent.Properties.Add("_customproperty2", new { Value1 = "customvalue1", Value2 = "customvalue2", Extra2 = new { Value3 = "customvalue3" } });
+                logEvent.Properties.Add("_customproperty2", new { Value1 = "customvalue1", Value2 = "customvalue2", Extra2 = new { Value3 = "customvalue3", Array1 = new[] {1,2,3} } });
                 logEvent.Properties.Add("customproperty3", 2);
                 
 
@@ -42,12 +42,14 @@ namespace Gelf4NLog.UnitTest
                 Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty2_value1"));
                 Assert.AreEqual("customvalue2", jsonObject.Value<string>("_customproperty2_value2"));
                 Assert.AreEqual("customvalue3", jsonObject.Value<string>("_customproperty2_extra2_value3"));
+                Assert.AreEqual(new[] { 1, 2, 3 }, jsonObject["_customproperty2_extra2_array1"].ToObject<int[]>());
                 Assert.AreEqual("GelfConverterTestLogger", jsonObject.Value<string>("_loggerName"));
                 Assert.AreEqual("TestFacility", jsonObject.Value<string>("_facility"));
                 Assert.AreEqual(2, jsonObject.Value<int>("_customproperty3"));
+                Assert.AreEqual(new[] { 1, 2, 3 }, jsonObject["_customproperty4"].ToObject<int[]>());
 
                 //make sure that there are no other junk in there
-                Assert.AreEqual(13, jsonObject.Count);
+                Assert.AreEqual(15, jsonObject.Count);
             }
 
             [Test]

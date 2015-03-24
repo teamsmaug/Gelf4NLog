@@ -125,6 +125,11 @@ namespace Gelf4NLog.Target
                 {
                     FlattenAndAddObject(gelfMessage, key, value);
                 }
+
+                if (value is JArray)
+                {
+                    gelfMessage.Add(key, value);
+                }
             }
         }
 
@@ -153,7 +158,7 @@ namespace Gelf4NLog.Target
             var value = JToken.FromObject(property.Value, Serializer);
             FlattenAndAddObject(jObject, key, value);
 
-            if (!value.HasValues)
+            if (!value.HasValues || value is JArray)
             {
                 jObject.Add(key, value);
             }
