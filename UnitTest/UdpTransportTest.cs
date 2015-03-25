@@ -22,7 +22,7 @@ namespace Gelf4NLog.UnitTest
                 var converter = new Mock<IConverter>();
                 converter.Setup(c => c.GetGelfJson(It.IsAny<LogEventInfo>(), It.IsAny<string>())).Returns(new JObject());
 
-                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1" };
+                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1", HostPort = "0"};
                 var logEventInfo = new LogEventInfo { Message = "Test Message" };
 
                 target.WriteLogEventInfo(logEventInfo);
@@ -46,7 +46,7 @@ namespace Gelf4NLog.UnitTest
 
                 var transport = new UdpTransport(transportClient.Object);
 
-                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1" };
+                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1", HostPort = "0"};
                 target.WriteLogEventInfo(new LogEventInfo());
 
                 transportClient.Verify(t => t.Send(It.IsAny<byte[]>(), It.IsAny<Int32>(), It.IsAny<IPEndPoint>()), Times.Exactly(4));
