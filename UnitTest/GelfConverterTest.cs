@@ -39,10 +39,10 @@ namespace Gelf4NLog.UnitTest
                 Assert.AreEqual(6, jsonObject.Value<int>("level"));
 
                 Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty1"));
-                Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty2_value1"));
-                Assert.AreEqual("customvalue2", jsonObject.Value<string>("_customproperty2_value2"));
-                Assert.AreEqual("customvalue3", jsonObject.Value<string>("_customproperty2_extra2_value3"));
-                Assert.AreEqual(new[] { 1, 2, 3 }, jsonObject["_customproperty2_extra2_array1"].ToObject<int[]>());
+                Assert.AreEqual("customvalue1", jsonObject.Value<string>("_customproperty2.value1"));
+                Assert.AreEqual("customvalue2", jsonObject.Value<string>("_customproperty2.value2"));
+                Assert.AreEqual("customvalue3", jsonObject.Value<string>("_customproperty2.extra2.value3"));
+                Assert.AreEqual(new[] { 1, 2, 3 }, jsonObject["_customproperty2.extra2.array1"].ToObject<int[]>());
                 Assert.AreEqual("GelfConverterTestLogger", jsonObject.Value<string>("_loggerName"));
                 Assert.AreEqual("TestFacility", jsonObject.Value<string>("_facility"));
                 Assert.AreEqual(2, jsonObject.Value<int>("_customproperty3"));
