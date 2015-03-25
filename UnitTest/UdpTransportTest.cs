@@ -22,7 +22,7 @@ namespace Gelf4NLog.UnitTest
                 var converter = new Mock<IConverter>();
                 converter.Setup(c => c.GetGelfJson(It.IsAny<LogEventInfo>(), It.IsAny<string>())).Returns(new JObject());
 
-                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1", HostPort = "0"};
+                var target = new NLogTarget(transport, converter.Object) { HostIp = "127.0.0.1", HostPort = "0" };
                 var logEventInfo = new LogEventInfo { Message = "Test Message" };
 
                 target.WriteLogEventInfo(logEventInfo);

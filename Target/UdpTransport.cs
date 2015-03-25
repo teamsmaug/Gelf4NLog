@@ -7,13 +7,11 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Gelf4NLog.Target
 {
     public class UdpTransport : ITransport
     {
-        private static readonly Regex IpAddressRegex = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b");
         //UDP datagrams are limited to a size of 8192 bytes.
         private const int MaxMessageSizeInUdp = 8192;
         //Chunk also contains 12 byte prefix, so 8192 - 12.
@@ -35,7 +33,7 @@ namespace Gelf4NLog.Target
         /// <param name="message">Message (in JSON) to log</param>
         public void Send(string serverIpAddress, int serverPort, string message)
         {
-            var ipAddress = GetIpAddress(serverIpAddress);
+            var ipAddress = HostnameToIp.Parse(serverIpAddress);
             var ipEndPoint = new IPEndPoint(ipAddress, serverPort);
 
             var compressedMessage = CompressMessage(message);
@@ -67,17 +65,6 @@ namespace Gelf4NLog.Target
             {
                 _transportClient.Send(compressedMessage, compressedMessage.Length, ipEndPoint);
             }
-        }
-
-        private static IPAddress GetIpAddress(string serverIpAddress)
-        {
-            if (IpAddressRegex.IsMatch(serverIpAddress))
-            {
-                return IPAddress.Parse(serverIpAddress);
-            }
-            
-            var ips = Dns.GetHostAddresses(serverIpAddress);
-            return ips.FirstOrDefault();
         }
 
         /// <summary>
