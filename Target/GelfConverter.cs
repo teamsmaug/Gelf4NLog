@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using NLog;
@@ -31,9 +32,7 @@ namespace Gelf4NLog.Target
             //If we are dealing with an exception, pass exception properties to LogEventInfo properties
             if (logEventInfo.Exception != null)
             {
-                logEventInfo.Properties.Add("ExceptionSource", logEventInfo.Exception.Source);
-                logEventInfo.Properties.Add("ExceptionMessage", logEventInfo.Exception.Message);
-                logEventInfo.Properties.Add("StackTrace", logEventInfo.Exception.StackTrace);
+                AddExceptionDetails(logEventInfo.Properties, logEventInfo.Exception);
             }
 
             //Figure out the short message
@@ -192,6 +191,39 @@ namespace Gelf4NLog.Target
             }
 
             return 3; //LogLevel.Error
+        }
+
+        private static void AddExceptionDetails(IDictionary<object, object> properties, Exception exception)
+        {
+            var message = new StringBuilder();
+            var stacktrace = new StringBuilder();
+            var currentDepth = 0;
+
+            var currentException = exception;
+
+            do
+            {
+                message.Append(currentException.Message);
+
+                if (!string.IsNullOrWhiteSpace(currentException.StackTrace))
+                {
+                    stacktrace.AppendLine(currentException.StackTrace);
+                }
+
+                if (currentException.InnerException != null)
+                {
+                    message.Append(" - ");
+                    stacktrace.AppendLine("--- Inner exception stack trace ---");
+                }
+
+                currentException = currentException.InnerException;
+                currentDepth++;
+
+            } while (currentException != null && currentDepth < 5);
+
+            properties.Add("ExceptionSource", exception.Source);
+            properties.Add("ExceptionMessage", message.Length == 0 ? null : message.ToString());
+            properties.Add("StackTrace", stacktrace.Length == 0 ? null : stacktrace.ToString());
         }
     }
 }
