@@ -109,7 +109,7 @@ namespace Gelf4NLog.Target
                 {
                     var property = value as JProperty;
 
-                    var flattenedKey = string.Concat(key, ".", property.Name);
+                    var flattenedKey = string.Concat(key, "_", property.Name);
                     if (!property.Value.HasValues)
                     {
                         gelfMessage.Add(flattenedKey, property.Value);
